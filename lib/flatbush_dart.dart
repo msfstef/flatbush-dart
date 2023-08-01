@@ -1,7 +1,8 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:flatbush_dart/utils.dart';
+import 'package:flatbush_dart/sorting_utils.dart';
+import 'package:flatbush_dart/typed_array_utils.dart';
 import 'package:meta/meta.dart';
 
 /// Fast spatial index for 2D points and rectangles.
@@ -15,7 +16,7 @@ class Flatbush {
   Flatbush({
     required this.numItems,
     this.nodeSize = defaultNodeSize,
-    this.coordinateArrayViewConstructor = Float64List.view,
+    this.coordinateArrayType = Float64List,
     this.bufferConstructor = defaultBufferConstructor,
   }) {
     if (numItems <= 0) {
@@ -29,19 +30,10 @@ class Flatbush {
       );
     }
 
-    final coordinateArraySample = coordinateArrayViewConstructor(
-      Uint8List(0).buffer,
+    final coordinateArrayTypeIndex = TypedArrayUtils.getTypedArrayIndex(
+      coordinateArrayType,
+      _arrayTypes,
     );
-    final coordinateArrayElementSizeInBytes =
-        coordinateArraySample.elementSizeInBytes;
-    final coordinateArrayType = coordinateArraySample.runtimeType;
-
-    final coordinateArrayTypeIndex = _arrayTypes.indexOf(coordinateArrayType);
-    if (coordinateArrayTypeIndex < 0) {
-      throw ArgumentError(
-        'Unexpected typed array class: $coordinateArrayType',
-      );
-    }
 
     // calculate the total number of nodes in the R-tree to allocate space for
     // and the index of each tree level (used in search later)
@@ -55,22 +47,29 @@ class Flatbush {
       _levelBounds.add(numNodes * 4);
     } while (n != 1);
 
-    indexArrayViewConstructor = (numNodes < 2 ^ 14
-        ? Uint16List.view
-        : Uint32List.view) as TypedArrayViewConstructor;
-    final indexArrayElementSizeInBytes = indexArrayViewConstructor(
-      Uint8List(0).buffer,
-    ).elementSizeInBytes;
+    indexArrayType = numNodes < 2 ^ 14 ? Uint16List : Uint32List;
+    final indexArrayElementSizeInBytes =
+        TypedArrayUtils.getTypedArrayElementSizeInBytes(indexArrayType);
 
+    final coordinateArrayElementSizeInBytes =
+        TypedArrayUtils.getTypedArrayElementSizeInBytes(coordinateArrayType);
     final nodesByteSize = numNodes * 4 * coordinateArrayElementSizeInBytes;
 
     _data = bufferConstructor(
       8 + nodesByteSize + numNodes * indexArrayElementSizeInBytes,
     );
-    _boxes =
-        coordinateArrayViewConstructor(_data, 8, numNodes * 4) as List<num>;
-    _indices = indexArrayViewConstructor(_data, 8 + nodesByteSize, numNodes)
-        as List<int>;
+    _boxes = TypedArrayUtils.getTypedArrayView(
+      coordinateArrayType,
+      _data,
+      8,
+      numNodes * 4,
+    ) as List<num>;
+    _indices = TypedArrayUtils.getTypedArrayView(
+      indexArrayType,
+      _data,
+      8 + nodesByteSize,
+      numNodes,
+    ) as List<int>;
     _pos = 0;
     _indexMinX = double.infinity;
     _indexMinY = double.infinity;
@@ -116,14 +115,14 @@ class Flatbush {
   /// Size of the tree node of the index.
   final int nodeSize;
 
-  /// The typed array constructor used for coordinate storage.
-  final TypedArrayViewConstructor coordinateArrayViewConstructor;
+  /// The [TypedData] list type to use to store coordinates.
+  final Type coordinateArrayType;
+
+  /// The [TypedData] list type to use to store item indices.
+  late final Type indexArrayType;
 
   /// The byte buffer constructor used to store the whole index.
   final DataBufferConstructor bufferConstructor;
-
-  /// The typed array constructor used for item index storage.
-  late final TypedArrayViewConstructor indexArrayViewConstructor;
 
   late ByteBuffer _data;
   late List<num> _boxes;
@@ -330,14 +329,6 @@ typedef ItemIdx = int;
 /// A function that filters the results of a search
 /// based on the [index] of the item.
 typedef FlatbushFilter = bool Function(ItemIdx index);
-
-/// Constructor for a typed array view of byte bufer [buffer],
-/// with given [offsetInBytes] and [length].
-typedef TypedArrayViewConstructor = TypedData Function(
-  ByteBuffer buffer, [
-  int offsetInBytes,
-  int? length,
-]);
 
 /// Constructor for a byte buffer of given [length].
 typedef DataBufferConstructor = ByteBuffer Function(int length);
