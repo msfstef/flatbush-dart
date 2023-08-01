@@ -156,7 +156,7 @@ abstract class Flatbush {
   /// The number of rectangles added must match the one specified
   void finish() {
     if (_pos >> 2 != numItems) {
-      throw ArgumentError('Added ${_pos >> 2} items when expected $numItems.');
+      throw Exception('Added ${_pos >> 2} items when expected $numItems.');
     }
 
     final boxes = _boxes;
@@ -231,7 +231,53 @@ abstract class Flatbush {
     required double maxX,
     required double maxY,
     FlatbushFilter? filter,
-  });
+  }) {
+    if (_pos != _boxes.length) {
+      throw Exception('Data not yet indexed - call index.finish().');
+    }
+
+    int? nodeIndex = _boxes.length - 4;
+    final queue = <int>[];
+    final results = <int>[];
+
+    while (nodeIndex != null) {
+      // find the end index of the node
+      final end = min(
+        nodeIndex + nodeSize * 4,
+        upperBound(
+          nodeIndex,
+          _levelBounds,
+        ),
+      );
+
+      // search through child nodes
+      for (var pos = nodeIndex; pos < end; pos += 4) {
+        // check if node bbox intersects with query bbox
+        if (maxX < _boxes[pos]) continue; // maxX < nodeMinX
+        if (maxY < _boxes[pos + 1]) continue; // maxY < nodeMinY
+        if (minX > _boxes[pos + 2]) continue; // minX > nodeMaxX
+        if (minY > _boxes[pos + 3]) continue; // minY > nodeMaxY
+
+        final index = _indices[pos >> 2];
+
+        if (nodeIndex >= numItems * 4) {
+          // node; add it to the search queue
+          queue.add(index);
+        } else if (filter?.call(index) ?? true) {
+          // leaf item
+          results.add(index);
+        }
+      }
+
+      if (queue.isNotEmpty) {
+        nodeIndex = queue.removeLast();
+      } else {
+        nodeIndex = null;
+      }
+    }
+
+    return results;
+  }
 
   /// Returns an array of item indices in order of distance for the
   /// given coordinates [x] and [y] (using K nearest neighbors search).
