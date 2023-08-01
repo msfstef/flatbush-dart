@@ -1,5 +1,3 @@
-import 'dart:ffi';
-import 'dart:js_interop';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -17,6 +15,7 @@ abstract class Flatbush {
     required this.numItems,
     this.nodeSize = defaultNodeSize,
     this.coordinateArrayViewConstructor = Float64List.view,
+    this.bufferConstructor = defaultBufferConstructor,
   }) {
     if (numItems <= 0) {
       throw ArgumentError('Received non-positive numItems value: $numItems.');
@@ -64,9 +63,9 @@ abstract class Flatbush {
 
     final nodesByteSize = numNodes * 4 * coordinateArrayElementSizeInBytes;
 
-    _data = Uint8List(
+    _data = bufferConstructor(
       8 + nodesByteSize + numNodes * indexArrayElementSizeInBytes,
-    ).buffer;
+    );
     _boxes =
         coordinateArrayViewConstructor(_data, 8, numNodes * 4) as List<num>;
     _indices = indexArrayViewConstructor(_data, 8 + nodesByteSize, numNodes)
@@ -102,6 +101,11 @@ abstract class Flatbush {
   /// Serialized format version.
   static const int _version = 3;
 
+  /// Default byte buffer constructor, using [Uint8List] typed
+  /// array to generate a buffer.
+  static ByteBuffer defaultBufferConstructor(int length) =>
+      Uint8List(length).buffer;
+
   /// Default size of the tree node.
   static const int defaultNodeSize = 16;
 
@@ -114,7 +118,10 @@ abstract class Flatbush {
   /// The typed array constructor used for coordinate storage.
   final TypedArrayViewConstructor coordinateArrayViewConstructor;
 
-  /// The typed array constructor used for index storage.
+  /// The byte buffer constructor used to store the whole index.
+  final DataBufferConstructor bufferConstructor;
+
+  /// The typed array constructor used for item index storage.
   late final TypedArrayViewConstructor indexArrayViewConstructor;
 
   late ByteBuffer _data;
@@ -297,7 +304,10 @@ abstract class Flatbush {
     int? maxResults,
     double maxDistance = double.infinity,
     FlatbushFilter? filter,
-  });
+  }) {
+    // TODO: implement FlatQueue to perform kNN search
+    throw UnimplementedError('Must implement FlatQueue first');
+  }
 }
 
 /// The index of an item as returned by [Flatbush.add]
@@ -308,12 +318,13 @@ typedef ItemIdx = int;
 /// based on the [index] of the item.
 typedef FlatbushFilter = bool Function(ItemIdx index);
 
-/// Constructor for a typed array view of byte bufer
+/// Constructor for a typed array view of byte bufer [buffer],
+/// with given [offsetInBytes] and [length].
 typedef TypedArrayViewConstructor = TypedData Function(
   ByteBuffer buffer, [
   int offsetInBytes,
   int? length,
 ]);
 
-/// Constructor for data buffers
-typedef DataBufferConstructor = TypedData Function(int length);
+/// Constructor for a byte buffer of given [length].
+typedef DataBufferConstructor = ByteBuffer Function(int length);
