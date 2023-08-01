@@ -2,9 +2,10 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flatbush_dart/utils.dart';
+import 'package:meta/meta.dart';
 
 /// Fast spatial index for 2D points and rectangles.
-abstract class Flatbush {
+class Flatbush {
   /// Creates a new index that will hold [numItems] number of
   /// rectangles.
   ///
@@ -126,7 +127,19 @@ abstract class Flatbush {
 
   late ByteBuffer _data;
   late List<num> _boxes;
+
+  /// TESTING ONLY
+  /// The bounding boxes added to the index
+  @visibleForTesting
+  List<num> get boxes => _boxes;
+
   late List<int> _indices;
+
+  /// TESTING ONLY
+  /// The indices of the items in the index
+  @visibleForTesting
+  List<num> get indices => _indices;
+
   final List<int> _levelBounds = [];
   int _pos = 0;
   num _indexMinX = double.infinity;

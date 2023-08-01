@@ -10,3 +10,5 @@ environment:
 dev_dependencies:
   test: ^1.24.5
   very_good_analysis: ^5.0.0+1
+dependencies:
+  meta: ^1.9.1
