@@ -1,4 +1,9 @@
+import 'dart:ffi';
+import 'dart:js_interop';
+import 'dart:math';
 import 'dart:typed_data';
+
+import 'package:flatbush_dart/utils.dart';
 
 /// Fast spatial index for 2D points and rectangles.
 abstract class Flatbush {
@@ -65,7 +70,7 @@ abstract class Flatbush {
     _boxes =
         coordinateArrayViewConstructor(_data, 8, numNodes * 4) as List<num>;
     _indices = indexArrayViewConstructor(_data, 8 + nodesByteSize, numNodes)
-        as List<num>;
+        as List<int>;
     _pos = 0;
     _indexMinX = double.infinity;
     _indexMinY = double.infinity;
@@ -114,8 +119,8 @@ abstract class Flatbush {
 
   late ByteBuffer _data;
   late List<num> _boxes;
-  late List<num> _indices;
-  List<int> _levelBounds = [];
+  late List<int> _indices;
+  final List<int> _levelBounds = [];
   int _pos = 0;
   num _indexMinX = double.infinity;
   num _indexMinY = double.infinity;
@@ -149,7 +154,72 @@ abstract class Flatbush {
 
   /// Performs indexing of the added rectangles.
   /// The number of rectangles added must match the one specified
-  void finish();
+  void finish() {
+    if (_pos >> 2 != numItems) {
+      throw ArgumentError('Added ${_pos >> 2} items when expected $numItems.');
+    }
+
+    final boxes = _boxes;
+
+    if (numItems <= nodeSize) {
+      // only one node, skip sorting and just fill the root box
+      boxes[_pos++] = _indexMinX;
+      boxes[_pos++] = _indexMinY;
+      boxes[_pos++] = _indexMaxX;
+      boxes[_pos++] = _indexMaxY;
+      return;
+    }
+
+    final width = _indexMaxX > _indexMinX ? _indexMaxX - _indexMinX : 1;
+    final height = _indexMaxY > _indexMinY ? _indexMaxY - _indexMinY : 1;
+    final hilbertValues = Uint32List(numItems);
+    const hilbertMax = (1 << 16) - 1;
+
+    // map item centers into Hilbert coordinate space
+    // and calculate Hilbert values
+    for (var i = 0, pos = 0; i < numItems; i++) {
+      final minX = boxes[pos++];
+      final minY = boxes[pos++];
+      final maxX = boxes[pos++];
+      final maxY = boxes[pos++];
+      final x = (hilbertMax * ((minX + maxX) / 2 - _indexMinX) / width).floor();
+      final y =
+          (hilbertMax * ((minY + maxY) / 2 - _indexMinY) / height).floor();
+      hilbertValues[i] = hilbert(x, y);
+    }
+
+    // sort items by their Hilbert value (for packing later)
+    sort(hilbertValues, boxes, _indices, 0, numItems - 1, nodeSize);
+
+    // generate nodes at each tree level, bottom-up
+    for (var i = 0, pos = 0; i < _levelBounds.length - 1; i++) {
+      final end = _levelBounds[i];
+
+      // generate a parent node for each block of consecutive [nodeSize] nodes
+      while (pos < end) {
+        final nodeIndex = pos;
+
+        // calculate bbox for the new node
+        var nodeMinX = boxes[pos++];
+        var nodeMinY = boxes[pos++];
+        var nodeMaxX = boxes[pos++];
+        var nodeMaxY = boxes[pos++];
+        for (var j = 1; j < nodeSize && pos < end; j++) {
+          nodeMinX = min(nodeMinX, boxes[pos++]);
+          nodeMinY = min(nodeMinY, boxes[pos++]);
+          nodeMaxX = max(nodeMaxX, boxes[pos++]);
+          nodeMaxY = max(nodeMaxY, boxes[pos++]);
+        }
+
+        // add the new node to the tree data
+        _indices[_pos >> 2] = nodeIndex;
+        boxes[_pos++] = nodeMinX;
+        boxes[_pos++] = nodeMinY;
+        boxes[_pos++] = nodeMaxX;
+        boxes[_pos++] = nodeMaxY;
+      }
+    }
+  }
 
   /// Returns an array of item indices intersecting or touching
   /// the given bounding box, specified by [minX], [minY], [maxX], [maxY].
