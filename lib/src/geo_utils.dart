@@ -63,8 +63,15 @@ abstract class GeoUtils {
     );
 
     if (extremumLat > minLat && extremumLat < maxLat) {
-      d = max(d,
-          _greatCircleDistancePart(extremumLat, cosLat, sinLat, cosLngDelta));
+      d = max(
+        d,
+        _greatCircleDistancePart(
+          extremumLat,
+          cosLat,
+          sinLat,
+          cosLngDelta,
+        ),
+      );
     }
 
     return _earthRadius * acos(d);

@@ -56,8 +56,10 @@ class Geoflatbush {
 
     while (true) {
       // find the end index of the node
-      final end = min(nodeIndex + _index.nodeSize * 4,
-          SortingUtils.upperBound(nodeIndex, _index.levelBounds));
+      final end = min(
+        nodeIndex + _index.nodeSize * 4,
+        SortingUtils.upperBound(nodeIndex, _index.levelBounds),
+      );
 
       // add child nodes to the queue
       for (var pos = nodeIndex; pos < end; pos += 4) {
@@ -83,7 +85,7 @@ class Geoflatbush {
           // leaf node
           // put a negative index if it's an item rather
           // than a node, to recognize later
-          if (filter == null || filter(childIndex)) {
+          if (filter?.call(childIndex) ?? true) {
             q.add((-childIndex - 1, dist));
           }
         } else {
@@ -91,7 +93,7 @@ class Geoflatbush {
         }
       }
 
-      while (q.length > 0 && q.first.$2 < 0) {
+      while (q.length > 0 && q.first.$1 < 0) {
         final dist = q.first.$2;
         if (maxDistance != null && dist > maxDistance) return result;
         result.add(-q.removeFirst().$1 - 1);
