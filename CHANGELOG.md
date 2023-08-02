@@ -1,3 +1,5 @@
+### 1.2.0
+* Added `Geoflatbush` wrapper to `Flatbush` to allow curvature and dateline aware kNN queries with the `around` API.
 ### 1.1.0
 * Added `neighbors` API for kNN search on index using Dart's collection HeapPriorityQueue.
 ### 1.0.2
