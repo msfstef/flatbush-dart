@@ -1,4 +1,6 @@
 # Flatbush Dart
+[![Pub](https://img.shields.io/pub/v/flatbush_dart.svg)](https://pub.dev/packages/flatbush_dart)
+[![License](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/isc)
 
 A fast static spatial index for 2D points and rectangles in Dart, ported from the [excellent JavaScript implementation](https://github.com/mourner/flatbush/tree/main) by [Volodymyr Agafonkin](https://github.com/mourner), and includes [the extension for geographic queries](https://github.com/mourner/geoflatbush).
 
