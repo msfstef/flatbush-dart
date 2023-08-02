@@ -163,19 +163,22 @@ class Flatbush<CoordinateArrayType extends TypedData,
 
   late List<CoordinateNumberType> _boxes;
 
-  /// TESTING ONLY
   /// The bounding boxes added to the index
-  @visibleForTesting
+  @internal
   List<CoordinateNumberType> get boxes => _boxes;
 
   late List<ItemIdx> _indices;
 
-  /// TESTING ONLY
   /// The indices of the items in the index
-  @visibleForTesting
+  @internal
   List<ItemIdx> get indices => _indices;
 
   final List<int> _levelBounds = [];
+
+  /// The bounds of each level of the tree
+  @internal
+  List<int> get levelBounds => _levelBounds;
+
   int _pos = 0;
   late CoordinateNumberType _indexMinX;
   late CoordinateNumberType _indexMinY;

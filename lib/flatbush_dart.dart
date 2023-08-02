@@ -1,1 +1,2 @@
-export 'src/flatbush_dart.dart';
+export 'src/flatbush.dart';
+export 'src/geoflatbush.dart';
