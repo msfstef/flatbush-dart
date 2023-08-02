@@ -14,7 +14,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
   /// The [nodeSize] parameter controls the size of the tree
   /// node ([defaultNodeSize] by default). Increasing this value
   /// makes indexing faster and queries slower, and vice versa.
-  Flatbush({
+  Flatbush._({
     required this.numItems,
     this.nodeSize = defaultNodeSize,
     this.bufferConstructor = defaultBufferConstructor,
@@ -361,7 +361,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     int numItems, {
     int nodeSize = Flatbush.defaultNodeSize,
   }) =>
-      Flatbush<Int8List, int>(
+      Flatbush<Int8List, int>._(
         numItems: numItems,
         nodeSize: nodeSize,
       );
@@ -371,7 +371,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     int numItems, {
     int nodeSize = Flatbush.defaultNodeSize,
   }) =>
-      Flatbush<Uint8List, int>(
+      Flatbush<Uint8List, int>._(
         numItems: numItems,
         nodeSize: nodeSize,
       );
@@ -381,7 +381,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     int numItems, {
     int nodeSize = Flatbush.defaultNodeSize,
   }) =>
-      Flatbush<Uint8ClampedList, int>(
+      Flatbush<Uint8ClampedList, int>._(
         numItems: numItems,
         nodeSize: nodeSize,
       );
@@ -391,7 +391,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     int numItems, {
     int nodeSize = Flatbush.defaultNodeSize,
   }) =>
-      Flatbush<Int16List, int>(
+      Flatbush<Int16List, int>._(
         numItems: numItems,
         nodeSize: nodeSize,
       );
@@ -401,7 +401,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     int numItems, {
     int nodeSize = Flatbush.defaultNodeSize,
   }) =>
-      Flatbush<Uint16List, int>(
+      Flatbush<Uint16List, int>._(
         numItems: numItems,
         nodeSize: nodeSize,
       );
@@ -411,7 +411,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     int numItems, {
     int nodeSize = Flatbush.defaultNodeSize,
   }) =>
-      Flatbush<Int32List, int>(
+      Flatbush<Int32List, int>._(
         numItems: numItems,
         nodeSize: nodeSize,
       );
@@ -421,7 +421,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     int numItems, {
     int nodeSize = Flatbush.defaultNodeSize,
   }) =>
-      Flatbush<Uint32List, int>(
+      Flatbush<Uint32List, int>._(
         numItems: numItems,
         nodeSize: nodeSize,
       );
@@ -431,7 +431,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     int numItems, {
     int nodeSize = Flatbush.defaultNodeSize,
   }) =>
-      Flatbush<Float32List, double>(
+      Flatbush<Float32List, double>._(
         numItems: numItems,
         nodeSize: nodeSize,
       );
@@ -441,7 +441,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     int numItems, {
     int nodeSize = Flatbush.defaultNodeSize,
   }) =>
-      Flatbush<Float64List, double>(
+      Flatbush<Float64List, double>._(
         numItems: numItems,
         nodeSize: nodeSize,
       );
@@ -474,55 +474,55 @@ class Flatbush<CoordinateArrayType extends TypedData,
 
     switch (dataArrayType) {
       case Int8List:
-        return Flatbush<Int8List, int>(
+        return Flatbush<Int8List, int>._(
           numItems: numItems,
           nodeSize: nodeSize,
           data: data,
         );
       case Uint8List:
-        return Flatbush<Uint8List, int>(
+        return Flatbush<Uint8List, int>._(
           numItems: numItems,
           nodeSize: nodeSize,
           data: data,
         );
       case Uint8ClampedList:
-        return Flatbush<Uint8ClampedList, int>(
+        return Flatbush<Uint8ClampedList, int>._(
           numItems: numItems,
           nodeSize: nodeSize,
           data: data,
         );
       case Int16List:
-        return Flatbush<Int16List, int>(
+        return Flatbush<Int16List, int>._(
           numItems: numItems,
           nodeSize: nodeSize,
           data: data,
         );
       case Uint16List:
-        return Flatbush<Uint16List, int>(
+        return Flatbush<Uint16List, int>._(
           numItems: numItems,
           nodeSize: nodeSize,
           data: data,
         );
       case Int32List:
-        return Flatbush<Int32List, int>(
+        return Flatbush<Int32List, int>._(
           numItems: numItems,
           nodeSize: nodeSize,
           data: data,
         );
       case Uint32List:
-        return Flatbush<Uint32List, int>(
+        return Flatbush<Uint32List, int>._(
           numItems: numItems,
           nodeSize: nodeSize,
           data: data,
         );
       case Float32List:
-        return Flatbush<Float32List, double>(
+        return Flatbush<Float32List, double>._(
           numItems: numItems,
           nodeSize: nodeSize,
           data: data,
         );
       case Float64List:
-        return Flatbush<Float64List, double>(
+        return Flatbush<Float64List, double>._(
           numItems: numItems,
           nodeSize: nodeSize,
           data: data,

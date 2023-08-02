@@ -10,7 +10,7 @@ void main() {
     const data = sampleData;
 
     Flatbush<Float64List, double> createIndex() {
-      final index = Flatbush<Float64List, double>(numItems: data.length ~/ 4);
+      final index = Flatbush.double64(data.length ~/ 4);
 
       for (var i = 0; i < data.length; i += 4) {
         index.add(
@@ -26,8 +26,7 @@ void main() {
     }
 
     Flatbush<Float64List, double> createSmallIndex(int numItems, int nodeSize) {
-      final index =
-          Flatbush<Float64List, double>(numItems: numItems, nodeSize: nodeSize);
+      final index = Flatbush.double64(numItems, nodeSize: nodeSize);
       for (var i = 0; i < 4 * numItems; i += 4) {
         index.add(
           minX: data[i],
@@ -142,19 +141,22 @@ void main() {
     });
 
     test('throws an error if added less items than the index size', () {
-      expect(() => Flatbush(numItems: data.length ~/ 4).finish(),
-          throwsA(isA<ArgumentError>()));
+      expect(
+        () => Flatbush.double64(data.length ~/ 4).finish(),
+        throwsA(isA<Exception>()),
+      );
     });
 
     test('throws an error if searching before indexing', () {
       expect(
-          () => Flatbush(numItems: data.length ~/ 4)
-              .search(minX: 0, minY: 0, maxX: 20, maxY: 20),
-          throwsA(isA<ArgumentError>()));
+        () => Flatbush.double64(data.length ~/ 4)
+            .search(minX: 0, minY: 0, maxX: 20, maxY: 20),
+        throwsA(isA<Exception>()),
+      );
     });
 
     test('does not freeze on numItems = 0', () {
-      expect(() => Flatbush(numItems: 0), throwsA(isA<ArgumentError>()));
+      expect(() => Flatbush.double64(0), throwsA(isA<ArgumentError>()));
     });
 
     // test('performs a k-nearest-neighbors query', () {
@@ -173,7 +175,8 @@ void main() {
 
     // test('k-nearest-neighbors query accepts filterFn', () {
     //   Flatbush index = createIndex();
-    //   List<int> ids = index.neighbors(50, 50, 6, double.infinity, (int i) => i % 2 == 0);
+    //   List<int> ids = index.neighbors(
+    //      50, 50, 6, double.infinity, (int i) => i % 2 == 0);
 
     //   expect(ids..sort(), equals([6, 16, 18, 24, 54, 80]..sort()));
     // });
@@ -187,7 +190,7 @@ void main() {
 
     test('returns index of newly-added rectangle', () {
       const count = 5;
-      final index = Flatbush<Float64List, double>(numItems: count);
+      final index = Flatbush.double64(count);
 
       final ids = <int>[];
       for (var i = 0; i < count; i++) {
