@@ -6,7 +6,8 @@ import 'package:flatbush_dart/typed_array_utils.dart';
 import 'package:meta/meta.dart';
 
 /// Fast spatial index for 2D points and rectangles.
-class Flatbush {
+class Flatbush<CoordinateArrayType extends TypedData,
+    CoordinateNumberType extends num> {
   /// Creates a new index that will hold [numItems] number of
   /// rectangles.
   ///
@@ -16,7 +17,6 @@ class Flatbush {
   Flatbush({
     required this.numItems,
     this.nodeSize = defaultNodeSize,
-    this.coordinateArrayType = Float64List,
     this.bufferConstructor = defaultBufferConstructor,
   }) {
     if (numItems <= 0) {
@@ -30,10 +30,23 @@ class Flatbush {
       );
     }
 
-    final coordinateArrayTypeIndex = TypedArrayUtils.getTypedArrayIndex(
-      coordinateArrayType,
-      _arrayTypes,
-    );
+    final coordinateArrayTypeIndex = _arrayTypes.indexOf(CoordinateArrayType);
+    if (coordinateArrayTypeIndex == -1) {
+      throw ArgumentError('Invalid typed data type: $CoordinateArrayType');
+    }
+
+    if (CoordinateNumberType == num) {
+      throw ArgumentError(
+        'Must specify CoordinateNumberType as int or double to match the'
+        ' given $CoordinateArrayType.',
+      );
+    }
+
+    if (TypedArrayUtils.getTypedArrayElementType(CoordinateArrayType) !=
+        CoordinateNumberType) {
+      throw ArgumentError('Received invalid CoordinateArrayType value: '
+          '$CoordinateArrayType. Must be of type $CoordinateNumberType.');
+    }
 
     // calculate the total number of nodes in the R-tree to allocate space for
     // and the index of each tree level (used in search later)
@@ -63,7 +76,7 @@ class Flatbush {
       _data,
       8,
       numNodes * 4,
-    ) as List<num>;
+    ) as List<CoordinateNumberType>;
     _indices = TypedArrayUtils.getTypedArrayView(
       indexArrayType,
       _data,
@@ -71,10 +84,16 @@ class Flatbush {
       numNodes,
     ) as List<int>;
     _pos = 0;
-    _indexMinX = double.infinity;
-    _indexMinY = double.infinity;
-    _indexMaxX = double.negativeInfinity;
-    _indexMaxY = double.negativeInfinity;
+
+    // initialize the overall boudning box of the whole index
+    final (
+      minNumberForType as CoordinateNumberType,
+      maxNumberForType as CoordinateNumberType,
+    ) = TypedArrayUtils.getTypedArrayRange(coordinateArrayType);
+    _indexMinX = maxNumberForType;
+    _indexMinY = maxNumberForType;
+    _indexMaxX = minNumberForType;
+    _indexMaxY = minNumberForType;
 
     // set header information
     Uint8List.view(_data, 0, 2).setRange(0, 2, [
@@ -116,7 +135,7 @@ class Flatbush {
   final int nodeSize;
 
   /// The [TypedData] list type to use to store coordinates.
-  final Type coordinateArrayType;
+  final Type coordinateArrayType = CoordinateArrayType;
 
   /// The [TypedData] list type to use to store item indices.
   late final Type indexArrayType;
@@ -125,36 +144,36 @@ class Flatbush {
   final DataBufferConstructor bufferConstructor;
 
   late ByteBuffer _data;
-  late List<num> _boxes;
+  late List<CoordinateNumberType> _boxes;
 
   /// TESTING ONLY
   /// The bounding boxes added to the index
   @visibleForTesting
-  List<num> get boxes => _boxes;
+  List<CoordinateNumberType> get boxes => _boxes;
 
   late List<int> _indices;
 
   /// TESTING ONLY
   /// The indices of the items in the index
   @visibleForTesting
-  List<num> get indices => _indices;
+  List<int> get indices => _indices;
 
   final List<int> _levelBounds = [];
   int _pos = 0;
-  num _indexMinX = double.infinity;
-  num _indexMinY = double.infinity;
-  num _indexMaxX = double.negativeInfinity;
-  num _indexMaxY = double.negativeInfinity;
+  late CoordinateNumberType _indexMinX;
+  late CoordinateNumberType _indexMinY;
+  late CoordinateNumberType _indexMaxX;
+  late CoordinateNumberType _indexMaxY;
   // List<int> _queue = [];
 
   /// Adds a given rectangle to the index, specified by
   /// [minX], [minY], [maxX], and [maxY], and returns
   /// the corresponding [ItemIdx] for the added item.
   ItemIdx add({
-    required num minX,
-    required num minY,
-    required num maxX,
-    required num maxY,
+    required CoordinateNumberType minX,
+    required CoordinateNumberType minY,
+    required CoordinateNumberType maxX,
+    required CoordinateNumberType maxY,
   }) {
     final index = _pos >> 2;
     _indices[index] = index;
@@ -245,10 +264,10 @@ class Flatbush {
   ///
   /// Item indices refer to the value returned by [add].
   List<ItemIdx> search({
-    required double minX,
-    required double minY,
-    required double maxX,
-    required double maxY,
+    required CoordinateNumberType minX,
+    required CoordinateNumberType minY,
+    required CoordinateNumberType maxX,
+    required CoordinateNumberType maxY,
     FlatbushFilter? filter,
   }) {
     if (_pos != _boxes.length) {
