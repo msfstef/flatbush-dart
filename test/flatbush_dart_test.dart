@@ -200,34 +200,43 @@ void main() {
       expect(() => Flatbush.double64(0), throwsA(isA<ArgumentError>()));
     });
 
-    // test('performs a k-nearest-neighbors query', () {
-    //   final index = createIndex();
-    //   final ids = index.neighbors(50, 50, 3);
+    test('performs a k-nearest-neighbors query', () {
+      final index = createIndex();
+      final ids = index.neighbors(50, 50, maxResults: 3);
 
-    //   expect(ids..sort(), equals([31, 6, 75]..sort()));
-    // });
+      expect(ids..sort(), equals([31, 6, 75]..sort()));
+    });
 
-    // test('k-nearest-neighbors query accepts maxDistance', () {
-    //   Flatbush index = createIndex();
-    //   List<int> ids = index.neighbors(50, 50, double.infinity, 12);
+    test('k-nearest-neighbors query accepts maxDistance', () {
+      final index = createIndex();
+      final ids = index.neighbors(
+        50,
+        50,
+        maxDistance: 12,
+      );
 
-    //   expect(ids..sort(), equals([6, 29, 31, 75, 85]..sort()));
-    // });
+      expect(ids..sort(), equals([6, 29, 31, 75, 85]..sort()));
+    });
 
-    // test('k-nearest-neighbors query accepts filterFn', () {
-    //   Flatbush index = createIndex();
-    //   List<int> ids = index.neighbors(
-    //      50, 50, 6, double.infinity, (int i) => i % 2 == 0);
+    test('k-nearest-neighbors query accepts filterFn', () {
+      final index = createIndex();
+      final ids = index.neighbors(
+        50,
+        50,
+        maxResults: 6,
+        maxDistance: double.infinity,
+        filter: (int i) => i.isEven,
+      );
 
-    //   expect(ids..sort(), equals([6, 16, 18, 24, 54, 80]..sort()));
-    // });
+      expect(ids..sort(), equals([6, 16, 18, 24, 54, 80]..sort()));
+    });
 
-    // test('performs a k-nearest-neighbors query with all items', () {
-    //   Flatbush index = createIndex();
-    //   List<int> ids = index.neighbors(50, 50);
+    test('performs a k-nearest-neighbors query with all items', () {
+      final index = createIndex();
+      final ids = index.neighbors(50, 50);
 
-    //   expect(ids.length, equals(data.length >> 2));
-    // });
+      expect(ids.length, equals(data.length >> 2));
+    });
 
     test('returns index of newly-added rectangle', () {
       const count = 5;

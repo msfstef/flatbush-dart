@@ -2,17 +2,15 @@
 abstract class SortingUtils {
   /// 1D distance from the value [k] to the range
   /// specified by [min] and [max].
-  static num axisDist(num k, num min, num max) {
-    return k < min
-        ? min - k
-        : k <= max
-            ? 0
-            : k - max;
+  static T axisDist<T extends num>(T k, T min, T max) {
+    if (k < min) return min - k as T;
+    if (k <= max) return (T == double ? 0.0 : 0) as T;
+    return k - max as T;
   }
 
   /// Binary search for the first value in the [arr] array bigger
   /// than the given [value].
-  static num upperBound(num value, List<num> arr) {
+  static T upperBound<T extends num>(T value, List<T> arr) {
     var i = 0;
     var j = arr.length - 1;
     while (i < j) {

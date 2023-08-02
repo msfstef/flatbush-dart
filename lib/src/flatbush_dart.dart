@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:collection/collection.dart';
 import 'package:flatbush_dart/src/sorting_utils.dart';
 import 'package:flatbush_dart/src/typed_array_utils.dart';
 import 'package:meta/meta.dart';
@@ -167,12 +168,12 @@ class Flatbush<CoordinateArrayType extends TypedData,
   @visibleForTesting
   List<CoordinateNumberType> get boxes => _boxes;
 
-  late List<int> _indices;
+  late List<ItemIdx> _indices;
 
   /// TESTING ONLY
   /// The indices of the items in the index
   @visibleForTesting
-  List<int> get indices => _indices;
+  List<ItemIdx> get indices => _indices;
 
   final List<int> _levelBounds = [];
   int _pos = 0;
@@ -180,7 +181,11 @@ class Flatbush<CoordinateArrayType extends TypedData,
   late CoordinateNumberType _indexMinY;
   late CoordinateNumberType _indexMaxX;
   late CoordinateNumberType _indexMaxY;
-  // List<int> _queue = [];
+
+  /// A priority queue for k-nearest-neighbors queries
+  final _queue = HeapPriorityQueue<(ItemIdx, CoordinateNumberType)>(
+    (a, b) => a.$2.compareTo(b.$2),
+  );
 
   /// Adds a given rectangle to the index, specified by
   /// [minX], [minY], [maxX], and [maxY], and returns
@@ -343,24 +348,81 @@ class Flatbush<CoordinateArrayType extends TypedData,
   /// Returns an array of item indices in order of distance for the
   /// given coordinates [x] and [y] (using K nearest neighbors search).
   ///
-  /// The [maxResults] parameter limits the number of results returned,
-  /// if nothing is provided then all results are returned.
+  /// The [maxResults] parameter limits the number of results returned.
+  /// If not set, then number of results is not limited.
   ///
   /// The [maxDistance] parameter limits the distance from the given
-  /// coordinate to the results returned. Set to [double.infinity] by
-  /// default.
+  /// coordinate to the results returned. If not set, then distance from
+  /// given coordinate is not accounted for when filtering results.
   ///
   /// The [filter] parameter can be used to filter the results based
   /// on their [ItemIdx].
-  List<ItemIdx> neighbours(
-    double x,
-    double y, {
+  List<ItemIdx> neighbors(
+    CoordinateNumberType x,
+    CoordinateNumberType y, {
     int? maxResults,
-    double maxDistance = double.infinity,
+    CoordinateNumberType? maxDistance,
     FlatbushFilter? filter,
   }) {
-    // TODO(msfstef): implement FlatQueue to perform kNN search
-    throw UnimplementedError('Must implement FlatQueue first');
+    if (_pos != _boxes.length) {
+      throw Exception('Data not yet indexed - call index.finish().');
+    }
+
+    int? nodeIndex = _boxes.length - 4;
+    final q = _queue;
+    final results = <int>[];
+    final maxDistSquared =
+        maxDistance != null ? maxDistance * maxDistance : null;
+
+    outer:
+    while (nodeIndex != null) {
+      // find the end index of the node
+      final end = min(
+        nodeIndex + nodeSize * 4,
+        SortingUtils.upperBound(nodeIndex, _levelBounds),
+      );
+
+      // add child nodes to the queue
+      for (var pos = nodeIndex; pos < end; pos += 4) {
+        final index = this._indices[pos >> 2] | 0;
+
+        final dx = SortingUtils.axisDist<CoordinateNumberType>(
+          x,
+          _boxes[pos],
+          _boxes[pos + 2],
+        );
+        final dy = SortingUtils.axisDist<CoordinateNumberType>(
+          y,
+          _boxes[pos + 1],
+          _boxes[pos + 3],
+        );
+        final dist = dx * dx + dy * dy as CoordinateNumberType;
+        if (maxDistSquared != null && dist > maxDistSquared) continue;
+
+        if (nodeIndex >= numItems * 4) {
+          // node (use even id)
+          q.add((index << 1, dist));
+        } else if (filter?.call(index) ?? true) {
+          // leaf item (use odd id)
+          q.add(((index << 1) + 1, dist));
+        }
+      }
+
+      // pop items from the queue
+      while (q.length > 0 && (q.first.$1 & 1) > 0) {
+        final dist = q.first.$2;
+
+        if (maxDistSquared != null && dist > maxDistSquared) break outer;
+
+        results.add(q.removeFirst().$1 >> 1);
+        if (maxResults != null && results.length == maxResults) break outer;
+      }
+
+      nodeIndex = q.length > 0 ? q.removeFirst().$1 >> 1 : null;
+    }
+
+    q.clear();
+    return results;
   }
 
   /// Creates a [Flatbush] instance with [Int8List] storage

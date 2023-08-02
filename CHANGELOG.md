@@ -1,3 +1,5 @@
+### 1.1.0
+* Added `neighbors` API for kNN search on index using Dart's collection HeapPriorityQueue.
 ### 1.0.2
 * Slightly refactored files to follow Dart package conventions
 ### 1.0.1
