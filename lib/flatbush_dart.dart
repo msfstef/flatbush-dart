@@ -352,7 +352,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     double maxDistance = double.infinity,
     FlatbushFilter? filter,
   }) {
-    // TODO: implement FlatQueue to perform kNN search
+    // TODO(msfstef): implement FlatQueue to perform kNN search
     throw UnimplementedError('Must implement FlatQueue first');
   }
 
