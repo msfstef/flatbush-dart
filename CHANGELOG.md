@@ -1,4 +1,4 @@
-### 1.0.1
+### 1.0.2
 * Added repository to pubspec.yaml
 
 ### 1.0.0
