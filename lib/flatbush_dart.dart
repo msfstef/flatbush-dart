@@ -5,8 +5,6 @@ import 'package:flatbush_dart/sorting_utils.dart';
 import 'package:flatbush_dart/typed_array_utils.dart';
 import 'package:meta/meta.dart';
 
-part 'flatbush_generators.dart';
-
 /// Fast spatial index for 2D points and rectangles.
 class Flatbush<CoordinateArrayType extends TypedData,
     CoordinateNumberType extends num> {
@@ -20,6 +18,7 @@ class Flatbush<CoordinateArrayType extends TypedData,
     required this.numItems,
     this.nodeSize = defaultNodeSize,
     this.bufferConstructor = defaultBufferConstructor,
+    ByteBuffer? data,
   }) {
     if (numItems <= 0) {
       throw ArgumentError('Received non-positive numItems value: $numItems.');
@@ -70,66 +69,50 @@ class Flatbush<CoordinateArrayType extends TypedData,
         TypedArrayUtils.getTypedArrayElementSizeInBytes(coordinateArrayType);
     final nodesByteSize = numNodes * 4 * coordinateArrayElementSizeInBytes;
 
-    _data = bufferConstructor(
-      8 + nodesByteSize + numNodes * indexArrayElementSizeInBytes,
-    );
+    _data = data ??
+        bufferConstructor(
+          8 + nodesByteSize + numNodes * indexArrayElementSizeInBytes,
+        );
     _boxes = TypedArrayUtils.getTypedArrayView(
       coordinateArrayType,
       _data,
       8,
       numNodes * 4,
     ) as List<CoordinateNumberType>;
+
     _indices = TypedArrayUtils.getTypedArrayView(
       indexArrayType,
       _data,
       8 + nodesByteSize,
       numNodes,
     ) as List<int>;
-    _pos = 0;
 
-    // initialize the overall boudning box of the whole index
-    final (
-      minNumberForType as CoordinateNumberType,
-      maxNumberForType as CoordinateNumberType,
-    ) = TypedArrayUtils.getTypedArrayRange(coordinateArrayType);
-    _indexMinX = maxNumberForType;
-    _indexMinY = maxNumberForType;
-    _indexMaxX = minNumberForType;
-    _indexMaxY = minNumberForType;
+    if (data != null) {
+      _pos = numNodes * 4;
+      _indexMinX = _boxes[_pos - 4];
+      _indexMinY = _boxes[_pos - 3];
+      _indexMaxX = _boxes[_pos - 2];
+      _indexMaxY = _boxes[_pos - 1];
+    } else {
+      // initialize the overall boudning box of the whole index
+      _pos = 0;
+      final (
+        minNumberForType as CoordinateNumberType,
+        maxNumberForType as CoordinateNumberType,
+      ) = TypedArrayUtils.getTypedArrayRange(coordinateArrayType);
+      _indexMinX = maxNumberForType;
+      _indexMinY = maxNumberForType;
+      _indexMaxX = minNumberForType;
+      _indexMaxY = minNumberForType;
 
-    // set header information
-    Uint8List.view(_data, 0, 2).setRange(0, 2, [
-      0xfb,
-      (_version << 4) + coordinateArrayTypeIndex,
-    ]);
-    Uint16List.view(_data, 2, 1)[0] = nodeSize;
-    Uint32List.view(_data, 4, 1)[0] = numItems;
-  }
-
-  static Flatbush from(ByteBuffer data) {
-    final [magic, versionAndType] = Uint8List.view(data, 0, 2);
-    if (magic != 0xfb) {
-      throw Exception('Data does not appear to be in a Flatbush format.');
+      // set header information
+      Uint8List.view(_data, 0, 2).setRange(0, 2, [
+        0xfb,
+        (_version << 4) + coordinateArrayTypeIndex,
+      ]);
+      Uint16List.view(_data, 2, 1)[0] = nodeSize;
+      Uint32List.view(_data, 4, 1)[0] = numItems;
     }
-
-    final dataVersion = versionAndType >> 4;
-    if (dataVersion != _version) {
-      throw Exception('Got $dataVersion data when expected $_version.');
-    }
-    final dataArrayTypeIndex = versionAndType & 0x0f;
-    if (dataArrayTypeIndex >= _arrayTypes.length || dataArrayTypeIndex < 0) {
-      throw Exception('Unrecognized array type.');
-    }
-
-    final dataArrayType = _arrayTypes[dataArrayTypeIndex];
-
-    final [nodeSize] = Uint16List.view(data, 2, 1);
-    final [numItems] = Uint32List.view(data, 4, 1);
-
-    return Flatbush<dataArrayType, int>(
-      numItems: numItems,
-      nodeSize: nodeSize,
-    );
   }
 
   /// Allowed typed array types.
@@ -172,6 +155,11 @@ class Flatbush<CoordinateArrayType extends TypedData,
   final DataBufferConstructor bufferConstructor;
 
   late ByteBuffer _data;
+
+  /// Serialized [Flatbush] index - can be transferred and parsed to generate
+  /// other [Flatbush] instances.
+  ByteBuffer get data => _data;
+
   late List<CoordinateNumberType> _boxes;
 
   /// TESTING ONLY
@@ -367,6 +355,193 @@ class Flatbush<CoordinateArrayType extends TypedData,
     // TODO: implement FlatQueue to perform kNN search
     throw UnimplementedError('Must implement FlatQueue first');
   }
+
+  /// Creates a [Flatbush] instance with [Int8List] storage
+  static Flatbush<Int8List, int> int8(
+    int numItems, {
+    int nodeSize = Flatbush.defaultNodeSize,
+  }) =>
+      Flatbush<Int8List, int>(
+        numItems: numItems,
+        nodeSize: nodeSize,
+      );
+
+  /// Creates a [Flatbush] instance with [Uint8List] storage
+  static Flatbush<Uint8List, int> uint8(
+    int numItems, {
+    int nodeSize = Flatbush.defaultNodeSize,
+  }) =>
+      Flatbush<Uint8List, int>(
+        numItems: numItems,
+        nodeSize: nodeSize,
+      );
+
+  /// Creates a [Flatbush] instance with [Uint8ClampedList] storage
+  static Flatbush<Uint8ClampedList, int> uint8Clamped(
+    int numItems, {
+    int nodeSize = Flatbush.defaultNodeSize,
+  }) =>
+      Flatbush<Uint8ClampedList, int>(
+        numItems: numItems,
+        nodeSize: nodeSize,
+      );
+
+  /// Creates a [Flatbush] instance with [Int16List] storage
+  static Flatbush<Int16List, int> int16(
+    int numItems, {
+    int nodeSize = Flatbush.defaultNodeSize,
+  }) =>
+      Flatbush<Int16List, int>(
+        numItems: numItems,
+        nodeSize: nodeSize,
+      );
+
+  /// Creates a [Flatbush] instance with [Uint16List] storage
+  static Flatbush<Uint16List, int> uint16(
+    int numItems, {
+    int nodeSize = Flatbush.defaultNodeSize,
+  }) =>
+      Flatbush<Uint16List, int>(
+        numItems: numItems,
+        nodeSize: nodeSize,
+      );
+
+  /// Creates a [Flatbush] instance with [Int32List] storage
+  static Flatbush<Int32List, int> int32(
+    int numItems, {
+    int nodeSize = Flatbush.defaultNodeSize,
+  }) =>
+      Flatbush<Int32List, int>(
+        numItems: numItems,
+        nodeSize: nodeSize,
+      );
+
+  /// Creates a [Flatbush] instance with [Uint32List] storage
+  static Flatbush<Uint32List, int> uint32(
+    int numItems, {
+    int nodeSize = Flatbush.defaultNodeSize,
+  }) =>
+      Flatbush<Uint32List, int>(
+        numItems: numItems,
+        nodeSize: nodeSize,
+      );
+
+  /// Creates a [Flatbush] instance with [Float32List] storage
+  static Flatbush<Float32List, double> double32(
+    int numItems, {
+    int nodeSize = Flatbush.defaultNodeSize,
+  }) =>
+      Flatbush<Float32List, double>(
+        numItems: numItems,
+        nodeSize: nodeSize,
+      );
+
+  /// Creates a [Flatbush] instance with [Float64List] storage
+  static Flatbush<Float64List, double> double64(
+    int numItems, {
+    int nodeSize = Flatbush.defaultNodeSize,
+  }) =>
+      Flatbush<Float64List, double>(
+        numItems: numItems,
+        nodeSize: nodeSize,
+      );
+
+  /// Parses [data] into a [Flatbush] instance of the correct type,
+  /// given that the data came from a serialization of a [Flatbush] index
+  /// of a valid type and version
+  static Flatbush from(ByteBuffer data) {
+    final [magic, versionAndType] = Uint8List.view(data, 0, 2);
+    if (magic != 0xfb) {
+      throw Exception('Data does not appear to be in a Flatbush format.');
+    }
+
+    final dataVersion = versionAndType >> 4;
+    if (dataVersion != Flatbush._version) {
+      throw Exception(
+        'Got $dataVersion data when expected $Flatbush._version.',
+      );
+    }
+    final dataArrayTypeIndex = versionAndType & 0x0f;
+    if (dataArrayTypeIndex >= Flatbush._arrayTypes.length ||
+        dataArrayTypeIndex < 0) {
+      throw Exception('Unrecognized array type $dataArrayTypeIndex.');
+    }
+
+    final dataArrayType = Flatbush._arrayTypes[dataArrayTypeIndex];
+
+    final [nodeSize] = Uint16List.view(data, 2, 1);
+    final [numItems] = Uint32List.view(data, 4, 1);
+
+    switch (dataArrayType) {
+      case Int8List:
+        return Flatbush<Int8List, int>(
+          numItems: numItems,
+          nodeSize: nodeSize,
+          data: data,
+        );
+      case Uint8List:
+        return Flatbush<Uint8List, int>(
+          numItems: numItems,
+          nodeSize: nodeSize,
+          data: data,
+        );
+      case Uint8ClampedList:
+        return Flatbush<Uint8ClampedList, int>(
+          numItems: numItems,
+          nodeSize: nodeSize,
+          data: data,
+        );
+      case Int16List:
+        return Flatbush<Int16List, int>(
+          numItems: numItems,
+          nodeSize: nodeSize,
+          data: data,
+        );
+      case Uint16List:
+        return Flatbush<Uint16List, int>(
+          numItems: numItems,
+          nodeSize: nodeSize,
+          data: data,
+        );
+      case Int32List:
+        return Flatbush<Int32List, int>(
+          numItems: numItems,
+          nodeSize: nodeSize,
+          data: data,
+        );
+      case Uint32List:
+        return Flatbush<Uint32List, int>(
+          numItems: numItems,
+          nodeSize: nodeSize,
+          data: data,
+        );
+      case Float32List:
+        return Flatbush<Float32List, double>(
+          numItems: numItems,
+          nodeSize: nodeSize,
+          data: data,
+        );
+      case Float64List:
+        return Flatbush<Float64List, double>(
+          numItems: numItems,
+          nodeSize: nodeSize,
+          data: data,
+        );
+      default:
+        throw Exception('Unrecognized array type $dataArrayTypeIndex.');
+    }
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) =>
+      other is Flatbush &&
+      other.runtimeType == runtimeType &&
+      other.data == data;
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => data.hashCode;
 }
 
 /// The index of an item as returned by [Flatbush.add]

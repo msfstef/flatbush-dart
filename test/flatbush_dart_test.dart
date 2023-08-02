@@ -120,12 +120,26 @@ void main() {
       );
     });
 
-    // test('reconstructs an index from array buffer', () {
-    //   final index = createIndex();
-    //   final index2 = Flatbush.from(index.data);
+    test('reconstructs an index from array buffer', () {
+      final index = createIndex();
 
-    //   expect(index2, equals(index));
-    // });
+      final index2 = Flatbush.from(index.data);
+
+      expect(index2, equals(index));
+
+      expect(
+        index.boxes.length + index.indices.length,
+        index2.boxes.length + index2.indices.length,
+      );
+      expect(
+        index.boxes.sublist(index.boxes.length - 4, index.boxes.length),
+        index2.boxes.sublist(index2.boxes.length - 4, index2.boxes.length),
+      );
+      expect(
+        index.indices[index.boxes.length ~/ 4 - 1],
+        index2.indices[index2.boxes.length ~/ 4 - 1],
+      );
+    });
 
     test('throws an error if added less items than the index size', () {
       expect(() => Flatbush(numItems: data.length ~/ 4).finish(),
