@@ -1,3 +1,4 @@
+/// Utilities for sorting bounding boxes and values.
 abstract class SortingUtils {
   /// 1D distance from the value [k] to the range
   /// specified by [min] and [max].
