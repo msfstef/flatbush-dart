@@ -1,6 +1,6 @@
 name: flatbush_dart
 description: A fast static spatial index for 2D points and rectangles, Dart port of https://github.com/mourner/flatbush/tree/main.
-version: 1.0.4
+version: 1.0.1
 homepage: https://github.com/msfstef/flatbush-dart
 repository: https://github.com/msfstef/flatbush-dart
 
