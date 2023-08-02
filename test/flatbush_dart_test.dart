@@ -11,7 +11,6 @@ void main() {
 
     Flatbush<Float64List, double> createIndex() {
       final index = Flatbush.double64(data.length ~/ 4);
-
       for (var i = 0; i < data.length; i += 4) {
         index.add(
           minX: data[i],
@@ -21,7 +20,6 @@ void main() {
         );
       }
       index.finish();
-
       return index;
     }
 
@@ -33,6 +31,20 @@ void main() {
           minY: data[i + 1],
           maxX: data[i + 2],
           maxY: data[i + 3],
+        );
+      }
+      index.finish();
+      return index;
+    }
+
+    Flatbush<Int32List, int> createIntIndex() {
+      final index = Flatbush.int32(data.length ~/ 4);
+      for (var i = 0; i < data.length; i += 4) {
+        index.add(
+          minX: data[i].toInt(),
+          minY: data[i + 1].toInt(),
+          maxX: data[i + 2].toInt(),
+          maxY: data[i + 3].toInt(),
         );
       }
       index.finish();
@@ -92,6 +104,35 @@ void main() {
 
     test('performs bbox search', () {
       final index = createIndex();
+
+      final ids = index.search(
+        minX: 40,
+        minY: 40,
+        maxX: 60,
+        maxY: 60,
+      );
+
+      final results = <num>[];
+      for (var i = 0; i < ids.length; i++) {
+        results.addAll([
+          data[4 * ids[i]],
+          data[4 * ids[i] + 1],
+          data[4 * ids[i] + 2],
+          data[4 * ids[i] + 3],
+        ]);
+      }
+
+      expect(
+        results..sort(),
+        equals(
+          [57, 59, 58, 59, 48, 53, 52, 56, 40, 42, 43, 43, 43, 41, 47, 43]
+            ..sort(),
+        ),
+      );
+    });
+
+    test('performs bbox search on integers', () {
+      final index = createIntIndex();
 
       final ids = index.search(
         minX: 40,
