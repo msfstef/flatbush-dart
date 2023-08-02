@@ -1,3 +1,5 @@
+### 1.0.2
+* Slightly refactored files to follow Dart package conventions
 ### 1.0.1
 * Added repository to pubspec.yaml
 * Added GitHub Actions workflows for testing and deployment
