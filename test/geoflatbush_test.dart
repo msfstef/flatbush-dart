@@ -1,23 +1,28 @@
 import 'package:cities/cities.dart';
+import 'package:cities/model.dart';
 import 'package:flatbush_dart/flatbush_dart.dart';
 import 'package:flatbush_dart/src/geo_utils.dart';
 import 'package:test/test.dart';
 
-void main() async {
-  final cities = (await cities_auto()).all;
+void main() {
   group('Geoflatbush', () {
-    final flatbushIndex = Flatbush.double64(cities.length, nodeSize: 4);
+    late final List<City> cities;
+    late final Geoflatbush index;
+    setUpAll(() async {
+      cities = (await cities_auto()).all;
+      final flatbushIndex = Flatbush.double64(cities.length, nodeSize: 4);
 
-    for (final city in cities) {
-      flatbushIndex.add(
-        minX: city.longitude,
-        minY: city.latitude,
-        maxX: city.longitude,
-        maxY: city.latitude,
-      );
-    }
-    flatbushIndex.finish();
-    final index = Geoflatbush(flatbushIndex);
+      for (final city in cities) {
+        flatbushIndex.add(
+          minX: city.longitude,
+          minY: city.latitude,
+          maxX: city.longitude,
+          maxY: city.latitude,
+        );
+      }
+      flatbushIndex.finish();
+      index = Geoflatbush(flatbushIndex);
+    });
 
     test('performs search according to maxResults', () {
       final points = index.around(-119.7051, 34.4363, maxResults: 5);

@@ -1,3 +1,5 @@
+### 1.2.1
+* Removed testing in Chrome VM as cities DB for testing `Geoflatbush` is incompatible - library still works but will have to come back to fix testing.
 ### 1.2.0
 * Added `Geoflatbush` wrapper to `Flatbush` to allow curvature and dateline aware kNN queries with the `around` API.
 ### 1.1.0
