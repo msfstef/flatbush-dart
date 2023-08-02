@@ -5,6 +5,8 @@ import 'package:flatbush_dart/sorting_utils.dart';
 import 'package:flatbush_dart/typed_array_utils.dart';
 import 'package:meta/meta.dart';
 
+part 'flatbush_generators.dart';
+
 /// Fast spatial index for 2D points and rectangles.
 class Flatbush<CoordinateArrayType extends TypedData,
     CoordinateNumberType extends num> {
@@ -102,6 +104,32 @@ class Flatbush<CoordinateArrayType extends TypedData,
     ]);
     Uint16List.view(_data, 2, 1)[0] = nodeSize;
     Uint32List.view(_data, 4, 1)[0] = numItems;
+  }
+
+  static Flatbush from(ByteBuffer data) {
+    final [magic, versionAndType] = Uint8List.view(data, 0, 2);
+    if (magic != 0xfb) {
+      throw Exception('Data does not appear to be in a Flatbush format.');
+    }
+
+    final dataVersion = versionAndType >> 4;
+    if (dataVersion != _version) {
+      throw Exception('Got $dataVersion data when expected $_version.');
+    }
+    final dataArrayTypeIndex = versionAndType & 0x0f;
+    if (dataArrayTypeIndex >= _arrayTypes.length || dataArrayTypeIndex < 0) {
+      throw Exception('Unrecognized array type.');
+    }
+
+    final dataArrayType = _arrayTypes[dataArrayTypeIndex];
+
+    final [nodeSize] = Uint16List.view(data, 2, 1);
+    final [numItems] = Uint32List.view(data, 4, 1);
+
+    return Flatbush<dataArrayType, int>(
+      numItems: numItems,
+      nodeSize: nodeSize,
+    );
   }
 
   /// Allowed typed array types.
