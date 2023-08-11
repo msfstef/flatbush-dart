@@ -1,3 +1,5 @@
+### 1.2.2
+* Loosen dependency requirements - Flutter SDK still behind.
 ### 1.2.1
 * Removed testing in Chrome VM as cities DB for testing `Geoflatbush` is incompatible - library still works but will have to come back to fix testing.
 ### 1.2.0
